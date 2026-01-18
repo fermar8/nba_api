@@ -1,0 +1,12 @@
+{
+  "endpoints": [
+    {
+      "name": "scoreboard",
+      "type": "live",
+      "module": "nba_api.live.nba.endpoints.scoreboard",
+      "class": "ScoreBoard",
+      "enabled": true,
+      "description": "Live scoreboard data for today's games"
+    }
+  ]
+}

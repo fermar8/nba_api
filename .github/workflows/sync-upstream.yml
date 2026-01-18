@@ -1,0 +1,39 @@
+name: Sync with Upstream
+
+on:
+  schedule:
+    # Run weekly on Sundays at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Sync with upstream
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Add upstream remote
+          git remote add upstream https://github.com/swar/nba_api.git || true
+          
+          # Fetch upstream changes
+          git fetch upstream
+          
+          # Merge upstream/master into current branch
+          git merge upstream/master --no-edit || {
+            echo "Merge conflict detected. Manual intervention required."
+            exit 1
+          }
+          
+          # Push changes
+          git push origin HEAD

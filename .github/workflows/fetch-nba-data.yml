@@ -1,0 +1,59 @@
+name: Fetch NBA Data to S3
+
+on:
+  schedule:
+    # Run daily at 12:00 UTC (during NBA season)
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+    # Allow manual trigger for testing
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  fetch-and-upload:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Install nba_api dependencies
+        run: |
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
+          poetry install --only main
+      
+      - name: Install workflow dependencies
+        run: |
+          poetry run pip install -r .github/requirements.txt
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PIPELINE_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-3' }}
+      
+      - name: Fetch and upload NBA data
+        env:
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
+        run: |
+          poetry run python scripts/fetch_and_upload.py
+      
+      - name: Upload completion summary
+        if: success()
+        run: |
+          echo "✓ Successfully fetched NBA data and uploaded to S3"
+          echo "Bucket: ${{ secrets.AWS_S3_BUCKET_NAME }}"
+          echo "Region: ${{ vars.AWS_REGION || 'eu-west-3' }}"
