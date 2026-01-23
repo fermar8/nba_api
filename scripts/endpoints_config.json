@@ -1,12 +1,156 @@
 {
   "endpoints": [
     {
-      "name": "scoreboard",
-      "type": "live",
-      "module": "nba_api.live.nba.endpoints.scoreboard",
-      "class": "ScoreBoard",
+      "name": "schedule",
+      "type": "stats",
+      "module": "nba_api.stats.endpoints.scheduleleaguev2",
+      "class": "ScheduleLeagueV2",
       "enabled": true,
-      "description": "Live scoreboard data for today's games"
+      "description": "Full NBA season schedule with game results",
+      "tier": 1,
+      "parameters": {
+        "season": "2025-26"
+      },
+      "essential_fields": [
+        "gameId",
+        "gameDate",
+        "gameDateTimeEst",
+        "gameStatus",
+        "gameStatusText",
+        "homeTeam_teamId",
+        "homeTeam_teamName",
+        "homeTeam_teamTricode",
+        "homeTeam_wins",
+        "homeTeam_losses",
+        "homeTeam_score",
+        "awayTeam_teamId",
+        "awayTeam_teamName",
+        "awayTeam_teamTricode",
+        "awayTeam_wins",
+        "awayTeam_losses",
+        "awayTeam_score",
+        "arenaName",
+        "arenaCity",
+        "arenaState"
+      ]
+    },
+    {
+      "name": "players",
+      "type": "stats",
+      "module": "nba_api.stats.endpoints.playerindex",
+      "class": "PlayerIndex",
+      "enabled": true,
+      "description": "Comprehensive player directory with filtering capabilities",
+      "tier": 1,
+      "parameters": {
+        "season": "2025-26"
+      },
+      "essential_fields": [
+        "PERSON_ID",
+        "PLAYER_FIRST_NAME",
+        "PLAYER_LAST_NAME",
+        "TEAM_ID",
+        "TEAM_NAME",
+        "TEAM_ABBREVIATION",
+        "JERSEY_NUMBER",
+        "POSITION",
+        "HEIGHT",
+        "WEIGHT",
+        "COLLEGE",
+        "COUNTRY",
+        "DRAFT_YEAR",
+        "DRAFT_ROUND",
+        "DRAFT_NUMBER",
+        "ROSTER_STATUS",
+        "FROM_YEAR",
+        "TO_YEAR"
+      ]
     }
-  ]
+  ],
+  "tier2_endpoints_future": [
+    {
+      "name": "player_stats",
+      "type": "stats",
+      "module": "nba_api.stats.endpoints.playergamelogs",
+      "class": "PlayerGameLogs",
+      "description": "Player game-by-game statistics (PRIMARY STATS SOURCE)",
+      "tier": 2,
+      "requires": "PERSON_ID from PlayerIndex",
+      "parameters": {
+        "player_id_nullable": "{PERSON_ID}",
+        "season_nullable": "2025-26"
+      },
+      "essential_fields": [
+        "PLAYER_ID",
+        "PLAYER_NAME",
+        "TEAM_ID",
+        "TEAM_ABBREVIATION",
+        "GAME_ID",
+        "GAME_DATE",
+        "MATCHUP",
+        "WL",
+        "MIN",
+        "FGM",
+        "FGA",
+        "FG_PCT",
+        "FG3M",
+        "FG3A",
+        "FG3_PCT",
+        "FTM",
+        "FTA",
+        "FT_PCT",
+        "OREB",
+        "DREB",
+        "REB",
+        "AST",
+        "STL",
+        "BLK",
+        "BLKA",
+        "TOV",
+        "PF",
+        "PFD",
+        "PTS"
+      ],
+      "note": "Requires chained fetching implementation - fetch PlayerIndex first, then iterate through PERSON_IDs"
+    },
+    {
+      "name": "upcoming_games",
+      "type": "stats",
+      "module": "nba_api.stats.endpoints.playernextngames",
+      "class": "PlayerNextNGames",
+      "description": "Upcoming games for specific player",
+      "tier": 2,
+      "requires": "PERSON_ID from PlayerIndex",
+      "parameters": {
+        "player_id": "{PERSON_ID}",
+        "number_of_games": 5,
+        "season": "2025-26"
+      },
+      "essential_fields": [
+        "GAME_ID",
+        "GAME_DATE",
+        "HOME_TEAM_ID",
+        "VISITOR_TEAM_ID",
+        "HOME_TEAM_NAME",
+        "VISITOR_TEAM_NAME",
+        "HOME_TEAM_ABBREVIATION",
+        "VISITOR_TEAM_ABBREVIATION",
+        "GAME_TIME",
+        "HOME_WL",
+        "VISITOR_WL"
+      ],
+      "note": "Requires chained fetching implementation"
+    }
+  ],
+  "notes": {
+    "tier1": "These endpoints can be fetched immediately with the current fetch_and_upload.py script",
+    "tier2": "These endpoints require implementing chained fetching - fetch Tier 1 first, extract IDs, then fetch Tier 2",
+    "essential_fields": "Whitelist of fields to keep when filtering response data (reduces storage costs by ~50-80%)",
+    "storage_structure": {
+      "dynamic_data": "nba-data/{endpoint}/{YYYY-MM-DD}/{HH-MM-SS}.json",
+      "static_data": "nba-data/{endpoint}/latest.json (overwrites)",
+      "dynamic_endpoints": ["schedule", "player_stats", "upcoming_games"],
+      "static_endpoints": ["players"]
+    }
+  }
 }
